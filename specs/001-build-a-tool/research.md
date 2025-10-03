@@ -7,27 +7,31 @@
 
 ### 1. TTS Provider Selection
 
-**Decision**: ElevenLabs API
+**Decision**: Google Cloud Text-to-Speech API
 
 **Rationale**:
-- High-quality, natural-sounding voices (meets FR-003)
-- Cost-effective: ~$0.30 per 1K characters ($3 for 10K words typical manuscript)
-- REST API with simple integration
-- Supports MP3 output natively
-- Multiple voice options (male/female) for FR-011
-- Streaming support for chunked processing
-- 5,000 character limit per request → natural chunking boundary
+- **Cost-effective for volume**: $4 per 1M characters = $0.004 per 1K characters ($0.04 for 10K words)
+- **75x cheaper** than premium providers like ElevenLabs ($0.30/1K chars)
+- **High-quality WaveNet voices**: Natural-sounding, good prosody and intonation (meets FR-003)
+- **Neural2 voices**: Even more natural option available
+- **Simple REST API**: Straightforward integration with Next.js API routes
+- **Supports MP3 output**: Native MP3 encoding (128kbps)
+- **400+ voices**: Multiple languages and voice options for FR-011
+- **5,000 character limit per request**: Same chunking boundary as other providers
+- **Prioritizes volume over premium quality**: Authors can convert longer manuscripts without cost concern
 
 **Alternatives Considered**:
-- **Google Cloud TTS**: $4 per 1M characters (cheaper), but less natural voices, more complex auth
-- **Amazon Polly**: $4 per 1M characters, good quality, but requires AWS SDK complexity
-- **Azure Speech**: Similar quality, but higher complexity for serverless setup
-- **OpenAI TTS**: $15 per 1M characters, excellent quality but 5x more expensive
+- **ElevenLabs**: $0.30 per 1K characters, premium quality, but 75x more expensive
+- **Amazon Polly**: $4 per 1M characters (same cost), good quality, but requires AWS SDK complexity
+- **Azure Speech**: $4 per 1M characters (same cost), but more complex auth for serverless
+- **OpenAI TTS**: $15 per 1M characters, excellent quality but 3.75x more expensive than Google
 
 **Implementation Notes**:
-- API key stored in Vercel environment variables
-- Rate limit: 10 requests/second (sufficient for chunked processing)
-- Text chunking at sentence boundaries, max 4,000 chars per chunk (safety margin)
+- API key or service account JSON stored in Vercel environment variables
+- Use WaveNet or Neural2 voices for quality (en-US-Wavenet-D, en-US-Wavenet-F, en-US-Neural2-A)
+- Rate limit: 300 requests/minute (sufficient for chunked processing)
+- Text chunking at sentence boundaries, max 4,000 chars per chunk (safety margin within 5K limit)
+- MP3 audio encoding at 128kbps, 44.1kHz sample rate
 
 ---
 
@@ -36,7 +40,7 @@
 **Decision**: Sentence-boundary chunking with 4,000 character limit
 
 **Rationale**:
-- ElevenLabs has 5,000 char limit; 4,000 provides safety margin
+- Google Cloud TTS has 5,000 char limit; 4,000 provides safety margin
 - Sentence boundaries prevent mid-word cuts that sound unnatural
 - Average sentence: 15-25 words (~100-150 characters) - good granularity
 - 4,000 chars ≈ 25-30 sentences ≈ 1-2 minutes audio
@@ -237,7 +241,7 @@ async function generateAudio(text: string, voice: string, onProgress: (p: number
 | Language | TypeScript | 5.x | Type safety, better DX |
 | UI Library | ShadCN + Radix | Latest | Accessible, customizable, Tailwind-native |
 | Styling | Tailwind CSS | 3.x | Utility-first, fast iteration |
-| TTS Provider | ElevenLabs | v1 | Best quality/cost ratio |
+| TTS Provider | Google Cloud TTS | v1 | Best volume/cost ratio (75x cheaper than premium) |
 | Audio Processing | Web Audio API | Native | Browser-native, no deps |
 | MP3 Encoding | lamejs | 1.2.1 | Lightweight, pure JS |
 | Storage | localStorage | Native | Simple, sufficient for 4min audio |
@@ -249,8 +253,9 @@ async function generateAudio(text: string, voice: string, onProgress: (p: number
 
 ## Open Questions / Decisions Deferred to Implementation
 
-1. **Voice Selection**: Which specific ElevenLabs voices to expose?
-   - Defer to implementation: Test 5-6 voices, pick 2-3 most natural
+1. **Voice Selection**: Which specific Google Cloud voices to expose?
+   - Defer to implementation: Test Wavenet and Neural2 voices, pick 2-3 most natural
+   - Initial candidates: en-US-Wavenet-D (male), en-US-Wavenet-F (female), en-US-Neural2-A (male)
    - Criteria: Clear diction, neutral accent, distinct male/female options
 
 2. **Chunk Retry UI**: Should retry be automatic or user-initiated?

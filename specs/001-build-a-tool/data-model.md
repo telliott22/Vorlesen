@@ -16,7 +16,7 @@ Represents a completed TTS conversion stored for replay.
 - `id`: `string` - Unique identifier (hash of text + voice + timestamp)
 - `textPreview`: `string` - First 200 chars of original text for display
 - `textHash`: `string` - SHA-256 hash of full text (for deduplication)
-- `voice`: `string` - Voice ID used for generation (e.g., "ElevenLabs:Rachel")
+- `voice`: `string` - Voice ID used for generation (e.g., "en-US-Wavenet-D")
 - `chunks`: `AudioChunk[]` - Array of audio chunk metadata
 - `totalDuration`: `number` - Total audio length in seconds
 - `createdAt`: `number` - Unix timestamp (milliseconds)
@@ -131,14 +131,14 @@ API request payload for TTS conversion.
 **Validation Rules**:
 - `text` length 1-4,000 characters
 - `text` not empty/whitespace
-- `voice` must match ElevenLabs voice ID pattern
+- `voice` must match Google Cloud TTS voice ID pattern (e.g., "en-US-Wavenet-D")
 - `format` must be "mp3_44100_128"
 
 **Example**:
 ```json
 {
   "text": "The quick brown fox jumps over the lazy dog.",
-  "voice": "ElevenLabs:Rachel",
+  "voice": "en-US-Wavenet-D",
   "format": "mp3_44100_128"
 }
 ```

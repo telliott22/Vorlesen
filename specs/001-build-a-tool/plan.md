@@ -31,11 +31,11 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Vorlesen is a serverless web application that enables authors to proofread their work by converting text to high-quality speech. Users paste their manuscript (unlimited length), select from 2-3 natural-sounding voices, and generate MP3 audio that can be played in-browser or downloaded. The system chunks long texts to handle TTS API limits, shows conversion progress, and persists audio in browser localStorage for instant replay. No authentication required—paste, generate, listen.
+Vorlesen is a serverless web application that enables authors to proofread their work by converting text to speech. Users paste their manuscript (unlimited length), select from 2-3 voices, and generate MP3 audio that can be played in-browser or downloaded. The system uses Google Cloud Text-to-Speech API (cost-optimized at $0.004/1K chars, 75x cheaper than premium alternatives) to prioritize volume over ultra-premium quality. Long texts are chunked automatically, with progress indicators and localStorage persistence for instant replay. No authentication required—paste, generate, listen.
 
 ## Technical Context
 **Language/Version**: TypeScript 5.x, Node.js 18+
-**Primary Dependencies**: Next.js 14+, React 18+, ShadCN UI, Tailwind CSS, TTS API client
+**Primary Dependencies**: Next.js 14+, React 18+, ShadCN UI, Tailwind CSS, Google Cloud TTS client
 **Storage**: Browser localStorage only (no server-side database)
 **Testing**: Vitest/Jest for unit tests, Playwright for E2E, MSW for API mocking
 **Target Platform**: Vercel serverless platform, modern evergreen browsers (Chrome, Firefox, Safari, Edge)
@@ -155,7 +155,7 @@ public/
 ## Phase 0: Outline & Research ✅ COMPLETE
 
 **Research Questions Resolved**:
-1. TTS Provider Selection → ElevenLabs API (cost-effective, high quality)
+1. TTS Provider Selection → Google Cloud TTS API (volume-optimized, 75x cheaper than premium)
 2. Audio Chunking Strategy → Sentence-boundary chunking, 4,000 char limit
 3. MP3 Stitching → Web Audio API + lamejs for encoding
 4. localStorage Strategy → Base64 chunks with LRU eviction
@@ -212,7 +212,7 @@ The `/tasks` command will generate tasks from Phase 1 artifacts following TDD pr
 
 4. **Core Library Tasks** (5-7 tasks):
    - lib/audio-chunker.ts: Text splitting logic
-   - lib/tts-client.ts: ElevenLabs API wrapper
+   - lib/tts-client.ts: Google Cloud TTS API wrapper
    - lib/audio-stitcher.ts: Web Audio concatenation + lamejs encoding
    - lib/storage.ts: localStorage CRUD with LRU eviction
    - lib/utils.ts: Common helpers

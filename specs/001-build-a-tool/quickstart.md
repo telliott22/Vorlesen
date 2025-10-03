@@ -18,7 +18,9 @@
    # Set environment variables
    cp .env.example .env.local
    # Edit .env.local and add:
-   # ELEVENLABS_API_KEY=your_api_key_here
+   # GOOGLE_CLOUD_TTS_API_KEY=your_api_key_here
+   # Or use service account JSON:
+   # GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 
    # Start development server
    npm run dev
@@ -64,16 +66,16 @@
 
 **Steps**:
 1. Paste same text as Test 1
-2. Select voice "Adam" (male)
+2. Select voice "Wavenet-F" (female)
 3. Generate speech
 4. Play audio and note voice characteristics
-5. Repeat with voice "Domi" (female)
-6. **Expected**: Three distinct voices, all natural-sounding
+5. Repeat with voice "Neural2-A" (male)
+6. **Expected**: Multiple distinct voices, all natural-sounding
 
 **Pass Criteria**:
 - ✅ At least 2-3 voices available
 - ✅ Voices sound distinct from each other
-- ✅ No robotic artifacts
+- ✅ Good quality (WaveNet or Neural2 tier)
 - ✅ Clear diction and natural pacing
 
 ---

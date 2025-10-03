@@ -28,13 +28,13 @@ paths:
                 summary: Short text conversion
                 value:
                   text: "The quick brown fox jumps over the lazy dog."
-                  voice: "ElevenLabs:Rachel"
+                  voice: "en-US-Wavenet-D"
                   format: "mp3_44100_128"
               longText:
                 summary: Maximum chunk size
                 value:
                   text: "Lorem ipsum dolor sit amet... (4000 chars)"
-                  voice: "ElevenLabs:Adam"
+                  voice: "en-US-Wavenet-F"
                   format: "mp3_44100_128"
 
       responses:
@@ -166,13 +166,13 @@ components:
           example: "The quick brown fox jumps over the lazy dog."
         voice:
           type: string
-          pattern: '^ElevenLabs:[A-Za-z]+$'
-          description: Voice ID in format "Provider:VoiceName"
-          example: "ElevenLabs:Rachel"
+          pattern: '^[a-z]{2}-[A-Z]{2}-(Wavenet|Neural2|Standard)-[A-Z]$'
+          description: Google Cloud TTS voice ID (language-region-type-variant)
+          example: "en-US-Wavenet-D"
           enum:
-            - "ElevenLabs:Rachel"
-            - "ElevenLabs:Adam"
-            - "ElevenLabs:Domi"
+            - "en-US-Wavenet-D"
+            - "en-US-Wavenet-F"
+            - "en-US-Neural2-A"
         format:
           type: string
           enum:
