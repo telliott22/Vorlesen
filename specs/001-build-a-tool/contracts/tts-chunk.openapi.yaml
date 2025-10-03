@@ -1,0 +1,238 @@
+openapi: 3.0.3
+info:
+  title: Vorlesen TTS API
+  version: 1.0.0
+  description: API for converting text chunks to speech
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://vorlesen.vercel.app/api
+    description: Production
+
+paths:
+  /tts-chunk:
+    post:
+      summary: Convert a single text chunk to speech
+      operationId: convertChunk
+      tags:
+        - TTS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TTSRequest'
+            examples:
+              shortText:
+                summary: Short text conversion
+                value:
+                  text: "The quick brown fox jumps over the lazy dog."
+                  voice: "ElevenLabs:Rachel"
+                  format: "mp3_44100_128"
+              longText:
+                summary: Maximum chunk size
+                value:
+                  text: "Lorem ipsum dolor sit amet... (4000 chars)"
+                  voice: "ElevenLabs:Adam"
+                  format: "mp3_44100_128"
+
+      responses:
+        '200':
+          description: Audio generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TTSResponse'
+              examples:
+                success:
+                  summary: Successful conversion
+                  value:
+                    audioData: "base64encodedmp3data..."
+                    durationSeconds: 2.4
+                    charactersUsed: 44
+
+        '400':
+          description: Invalid request (empty text, invalid voice, text too long)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emptyText:
+                  summary: Empty text
+                  value:
+                    error: "Please paste some text to convert"
+                    code: "TEXT_EMPTY"
+                    retryable: false
+                textTooLong:
+                  summary: Text exceeds chunk limit
+                  value:
+                    error: "Text chunk too long (max 4000 characters)"
+                    code: "TEXT_TOO_LONG"
+                    retryable: false
+                invalidVoice:
+                  summary: Invalid voice ID
+                  value:
+                    error: "Invalid voice selected"
+                    code: "INVALID_VOICE"
+                    retryable: false
+
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimit:
+                  summary: Rate limit hit
+                  value:
+                    error: "Too many requests. Please wait."
+                    code: "RATE_LIMIT"
+                    retryable: true
+                    retryAfter: 5
+
+        '500':
+          description: Server error (TTS API failure, network timeout)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                apiError:
+                  summary: TTS provider error
+                  value:
+                    error: "Conversion failed. Please try again."
+                    code: "API_ERROR"
+                    retryable: true
+
+        '503':
+          description: Service unavailable (API key invalid, TTS provider down)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serviceUnavailable:
+                  summary: Service unavailable
+                  value:
+                    error: "Service temporarily unavailable"
+                    code: "API_ERROR"
+                    retryable: true
+                    retryAfter: 60
+
+  /health:
+    get:
+      summary: Health check endpoint
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  timestamp:
+                    type: number
+                    description: Unix timestamp in milliseconds
+              examples:
+                healthy:
+                  summary: Service healthy
+                  value:
+                    status: "ok"
+                    timestamp: 1696320000000
+
+components:
+  schemas:
+    TTSRequest:
+      type: object
+      required:
+        - text
+        - voice
+        - format
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Text to convert to speech
+          example: "The quick brown fox jumps over the lazy dog."
+        voice:
+          type: string
+          pattern: '^ElevenLabs:[A-Za-z]+$'
+          description: Voice ID in format "Provider:VoiceName"
+          example: "ElevenLabs:Rachel"
+          enum:
+            - "ElevenLabs:Rachel"
+            - "ElevenLabs:Adam"
+            - "ElevenLabs:Domi"
+        format:
+          type: string
+          enum:
+            - "mp3_44100_128"
+          description: Audio format specification
+          example: "mp3_44100_128"
+
+    TTSResponse:
+      type: object
+      required:
+        - audioData
+        - durationSeconds
+        - charactersUsed
+      properties:
+        audioData:
+          type: string
+          format: byte
+          description: Base64-encoded MP3 audio data
+          example: "base64encodedmp3data..."
+        durationSeconds:
+          type: number
+          format: float
+          minimum: 0
+          description: Duration of generated audio in seconds
+          example: 2.4
+        charactersUsed:
+          type: integer
+          minimum: 1
+          maximum: 4000
+          description: Number of characters billed
+          example: 44
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+        - retryable
+      properties:
+        error:
+          type: string
+          description: User-friendly error message
+          example: "Too many requests. Please wait."
+        code:
+          type: string
+          enum:
+            - TEXT_EMPTY
+            - TEXT_TOO_LONG
+            - INVALID_VOICE
+            - RATE_LIMIT
+            - API_ERROR
+            - NETWORK_ERROR
+          description: Machine-readable error code
+          example: "RATE_LIMIT"
+        retryable:
+          type: boolean
+          description: Whether client should retry the request
+          example: true
+        retryAfter:
+          type: integer
+          minimum: 0
+          description: Seconds to wait before retrying (optional, for rate limits)
+          example: 5
