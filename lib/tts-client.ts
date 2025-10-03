@@ -8,13 +8,20 @@ function getClient(): TextToSpeechClient {
   if (!ttsClient) {
     // Use API key from environment variable if available
     const apiKey = process.env.GOOGLE_CLOUD_TTS_API_KEY;
+    const serviceAccountJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT;
 
     if (apiKey) {
       ttsClient = new TextToSpeechClient({
         apiKey: apiKey,
       });
+    } else if (serviceAccountJson) {
+      // Parse service account JSON from environment variable (for Vercel)
+      const credentials = JSON.parse(serviceAccountJson);
+      ttsClient = new TextToSpeechClient({
+        credentials,
+      });
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      // Use service account JSON file
+      // Use service account JSON file path (for local development)
       ttsClient = new TextToSpeechClient();
     } else {
       throw new Error('Google Cloud TTS credentials not configured');
