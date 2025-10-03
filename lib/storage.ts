@@ -38,13 +38,24 @@ export function saveAudio(audio: StoredAudio): void {
   try {
     localStorage.setItem(STORAGE_KEY, serialized);
   } catch {
-    // QuotaExceededError - try removing oldest item
-    if (audios.length > 1) {
-      audios.shift();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(audios));
-    } else {
-      throw new Error('Storage quota exceeded');
+    // QuotaExceededError - try removing items until it fits or give up
+    console.warn('localStorage quota exceeded, attempting to free space...');
+
+    while (audios.length > 0) {
+      audios.shift(); // Remove oldest
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(audios));
+        console.log(`Successfully saved after removing ${audios.length} old audio(s)`);
+        return; // Success!
+      } catch {
+        // Still too big, keep trying
+        continue;
+      }
     }
+
+    // If we get here, even empty array won't fit - localStorage is completely full
+    // Don't throw error, just log warning - storage is optional
+    console.warn('Cannot save to localStorage - storage completely full');
   }
 }
 

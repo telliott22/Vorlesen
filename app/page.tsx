@@ -121,24 +121,29 @@ export default function HomePage() {
       const url = await createAudioURL(audioChunks);
       setAudioUrl(url);
 
-      // Save to localStorage
+      // Save to localStorage (optional - don't fail if storage is full)
       const id = generateUUID();
-      const textHash = await generateHash(text);
-      const totalDuration = audioChunks.reduce(
-        (sum, chunk) => sum + chunk.durationSeconds,
-        0
-      );
+      try {
+        const textHash = await generateHash(text);
+        const totalDuration = audioChunks.reduce(
+          (sum, chunk) => sum + chunk.durationSeconds,
+          0
+        );
 
-      saveAudio({
-        id,
-        textPreview: truncateText(text, 100),
-        textHash,
-        voice,
-        chunks: audioChunks,
-        totalDuration,
-        createdAt: Date.now(),
-        lastAccessedAt: Date.now(),
-      });
+        saveAudio({
+          id,
+          textPreview: truncateText(text, 100),
+          textHash,
+          voice,
+          chunks: audioChunks,
+          totalDuration,
+          createdAt: Date.now(),
+          lastAccessedAt: Date.now(),
+        });
+      } catch (storageError) {
+        // Storage failed - not critical, just log it
+        console.warn('Failed to save audio to localStorage:', storageError);
+      }
 
       setAudioId(id);
       setStatus(ConversionStatus.COMPLETE);
