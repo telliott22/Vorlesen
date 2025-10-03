@@ -49,24 +49,24 @@ Next.js 14 App Router structure:
 
 ## Phase 3.1: Setup
 
-- [ ] T001 Initialize Next.js 14 project with TypeScript and Tailwind CSS at repository root
+- [x] T001 Initialize Next.js 14 project with TypeScript and Tailwind CSS at repository root
   ```bash
   npx create-next-app@latest . --typescript --tailwind --app --src-dir=false --import-alias="@/*"
   ```
 
-- [ ] T002 Install core dependencies
+- [x] T002 Install core dependencies
   ```bash
   npm install @google-cloud/text-to-speech lamejs
   npm install -D @playwright/test vitest @vitest/ui msw
   ```
 
-- [ ] T003 [P] Install and configure ShadCN UI components
+- [x] T003 [P] Install and configure ShadCN UI components
   ```bash
   npx shadcn-ui@latest init
   npx shadcn-ui@latest add button textarea select card progress
   ```
 
-- [ ] T004 [P] Create .env.example file with required environment variables
+- [x] T004 [P] Create .env.example file with required environment variables
   ```
   GOOGLE_CLOUD_TTS_API_KEY=your_api_key_here
   # Or use service account:
@@ -79,7 +79,7 @@ Next.js 14 App Router structure:
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
-- [ ] T005 [P] Contract test for POST /api/tts-chunk in tests/integration/tts-api.test.ts
+- [x] T005 [P] Contract test for POST /api/tts-chunk in tests/integration/tts-api.test.ts
   - Test valid request with text, voice, format
   - Assert response schema: audioData (base64), durationSeconds, charactersUsed
   - Test 400 errors: empty text, text too long (>4000 chars), invalid voice
@@ -87,7 +87,7 @@ Next.js 14 App Router structure:
   - Use MSW to mock Google Cloud TTS API
   - **MUST FAIL** initially (no implementation yet)
 
-- [ ] T006 [P] E2E test for paste-generate-play flow in tests/e2e/paste-generate-play.spec.ts
+- [x] T006 [P] E2E test for paste-generate-play flow in tests/e2e/paste-generate-play.spec.ts
   - Navigate to home page
   - Paste short text (100 words) into textarea
   - Select voice from dropdown
@@ -99,7 +99,7 @@ Next.js 14 App Router structure:
   - Test playback controls (pause, seek, speed)
   - **MUST FAIL** initially (no components exist)
 
-- [ ] T007 [P] E2E test for chunking long text in tests/e2e/chunking.spec.ts
+- [x] T007 [P] E2E test for chunking long text in tests/e2e/chunking.spec.ts
   - Paste long text (10,000 words)
   - Generate speech
   - Assert progress bar appears and updates
