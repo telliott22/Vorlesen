@@ -16,11 +16,13 @@ import { formatDuration } from '@/lib/utils';
 interface AudioPlayerProps {
   audioUrl: string;
   onDownload?: () => void;
+  filename?: string;
+  onFilenameChange?: (value: string) => void;
 }
 
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-export function AudioPlayer({ audioUrl, onDownload }: AudioPlayerProps) {
+export function AudioPlayer({ audioUrl, onDownload, filename, onFilenameChange }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -155,10 +157,20 @@ export function AudioPlayer({ audioUrl, onDownload }: AudioPlayerProps) {
         </div>
 
         {onDownload && (
-          <Button variant="outline" onClick={onDownload} aria-label="Download audio">
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={filename ?? ''}
+              onChange={(e) => onFilenameChange?.(e.target.value)}
+              placeholder="File name"
+              className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-44"
+              aria-label="Download file name"
+            />
+            <Button variant="outline" onClick={onDownload} aria-label="Download audio">
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
         )}
       </div>
     </div>

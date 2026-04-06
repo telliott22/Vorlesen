@@ -18,7 +18,8 @@ import { ErrorResponse, ErrorCode } from '@/types/audio';
 
 export default function HomePage() {
   const [text, setText] = useState('');
-  const [voice, setVoice] = useState('en-US-Wavenet-D');
+  const [voice, setVoice] = useState('en-US-AvaMultilingualNeural');
+  const [filename, setFilename] = useState('');
   const [status, setStatus] = useState(ConversionStatus.IDLE);
   const [progress, setProgress] = useState(0);
   const [currentChunk, setCurrentChunk] = useState(0);
@@ -163,9 +164,11 @@ export default function HomePage() {
   const handleDownload = () => {
     if (!audioUrl) return;
 
+    const name = filename.trim() || `vorlesen-${audioId || Date.now()}`;
+    const safeName = name.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim();
     const a = document.createElement('a');
     a.href = audioUrl;
-    a.download = `vorlesen-${audioId || Date.now()}.mp3`;
+    a.download = `${safeName || 'vorlesen'}.mp3`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -226,7 +229,12 @@ export default function HomePage() {
 
         {/* Audio player */}
         {audioUrl && status === ConversionStatus.COMPLETE && (
-          <AudioPlayer audioUrl={audioUrl} onDownload={handleDownload} />
+          <AudioPlayer
+            audioUrl={audioUrl}
+            onDownload={handleDownload}
+            filename={filename}
+            onFilenameChange={setFilename}
+          />
         )}
       </div>
     </main>
