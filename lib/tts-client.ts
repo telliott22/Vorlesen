@@ -1,89 +1,39 @@
-import { TextToSpeechClient } from '@google-cloud/text-to-speech';
+import { EdgeTTS } from 'edge-tts-universal';
 import { TTSRequest, TTSResponse, ErrorCode, ErrorResponse } from '@/types/audio';
 
-// Initialize Google Cloud TTS client
-let ttsClient: TextToSpeechClient | null = null;
-
-function getClient(): TextToSpeechClient {
-  if (!ttsClient) {
-    // Use API key from environment variable if available
-    const apiKey = process.env.GOOGLE_CLOUD_TTS_API_KEY;
-    const serviceAccountJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT;
-
-    if (apiKey) {
-      ttsClient = new TextToSpeechClient({
-        apiKey: apiKey,
-      });
-    } else if (serviceAccountJson) {
-      // Parse service account JSON from environment variable (for Vercel)
-      const credentials = JSON.parse(serviceAccountJson);
-      ttsClient = new TextToSpeechClient({
-        credentials,
-      });
-    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      // Use service account JSON file path (for local development)
-      ttsClient = new TextToSpeechClient();
-    } else {
-      throw new Error('Google Cloud TTS credentials not configured');
-    }
-  }
-
-  return ttsClient;
-}
-
 const VALID_VOICES = [
-  'en-US-Journey-D',
-  'en-US-Journey-F',
-  'en-US-Journey-O',
-  'en-US-Neural2-A',
-  'en-US-Neural2-C',
-  'en-US-Neural2-D',
-  'en-US-Neural2-F',
-  'en-US-Neural2-H',
-  'en-US-Neural2-I',
-  'en-US-Neural2-J',
-  'en-US-Wavenet-D',
-  'en-US-Wavenet-F',
+  'en-US-AvaMultilingualNeural',
+  'en-US-BrianMultilingualNeural',
+  'en-GB-RyanNeural',
+  'en-US-AndrewMultilingualNeural',
+  'en-US-EmmaMultilingualNeural',
+  'en-GB-SoniaNeural',
+  'en-US-AriaNeural',
+  'en-US-GuyNeural',
+  'en-US-JennyNeural',
+  'en-US-RogerNeural',
 ];
 
 /**
- * Convert text to speech using Google Cloud TTS API
- *
- * @param request - TTSRequest with text, voice, and format
- * @returns Promise<TTSResponse> with base64 audio data
- * @throws ErrorResponse for API errors
+ * Convert text to speech using Edge TTS (free Microsoft neural voices)
  */
 export async function convertToSpeech(
   request: TTSRequest,
   retries: number = 3
 ): Promise<TTSResponse> {
-  const client = getClient();
-
-  // Prepare the request
-  const apiRequest = {
-    input: { text: request.text },
-    voice: {
-      languageCode: request.voice.substring(0, 5), // e.g., "en-US"
-      name: request.voice,
-    },
-    audioConfig: {
-      audioEncoding: 'MP3' as const,
-      sampleRateHertz: 44100,
-      effectsProfileId: ['headphone-class-device'],
-    },
-  };
-
   try {
-    const [response] = await client.synthesizeSpeech(apiRequest);
+    const tts = new EdgeTTS(request.text, request.voice);
+    const result = await tts.synthesize();
 
-    if (!response.audioContent) {
-      throw new Error('No audio content in response');
+    const arrayBuffer = await result.audio.arrayBuffer();
+
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('No audio data received');
     }
 
-    // Convert Buffer to base64
-    const audioData = Buffer.from(response.audioContent as Uint8Array).toString('base64');
+    const audioData = Buffer.from(arrayBuffer).toString('base64');
 
-    // Estimate duration (rough: ~150 words per minute, ~5 chars per word)
+    // Estimate duration (~150 words per minute, ~5 chars per word)
     const wordCount = request.text.split(/\s+/).length;
     const durationSeconds = (wordCount / 150) * 60;
 
@@ -93,56 +43,26 @@ export async function convertToSpeech(
       charactersUsed: request.text.length,
     };
   } catch (error) {
-    const err = error as { code?: number; message?: string };
-    // Handle specific Google Cloud errors
-    if (err.code === 429 || err.message?.includes('quota')) {
-      const errorResponse: ErrorResponse = {
-        error: 'Too many requests. Please wait.',
-        code: ErrorCode.RATE_LIMIT,
-        retryable: true,
-        retryAfter: 5,
-      };
-
-      // Implement exponential backoff
-      if (retries > 0) {
-        const backoffTime = Math.pow(2, 4 - retries) * 1000; // 2s, 4s, 8s
-        await new Promise((resolve) => setTimeout(resolve, backoffTime));
-        return convertToSpeech(request, retries - 1);
-      }
-
-      throw errorResponse;
-    }
-
-    if (err.code === 401 || err.code === 403) {
-      const errorResponse: ErrorResponse = {
-        error: 'Service temporarily unavailable',
-        code: ErrorCode.API_ERROR,
-        retryable: false,
-      };
-      throw errorResponse;
-    }
-
-    // Generic API error
-    const errorResponse: ErrorResponse = {
-      error: 'Conversion failed. Please try again.',
-      code: ErrorCode.API_ERROR,
-      retryable: true,
-    };
+    const err = error as { message?: string };
+    console.error(`TTS attempt failed (${retries} retries left):`, err.message);
 
     if (retries > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const backoffTime = Math.pow(2, 4 - retries) * 1000;
+      await new Promise((resolve) => setTimeout(resolve, backoffTime));
       return convertToSpeech(request, retries - 1);
     }
 
+    const errorResponse: ErrorResponse = {
+      error: err.message || 'Conversion failed. Please try again.',
+      code: ErrorCode.API_ERROR,
+      retryable: true,
+    };
     throw errorResponse;
   }
 }
 
 /**
  * Validate TTS request parameters
- *
- * @param request - TTSRequest to validate
- * @throws ErrorResponse if validation fails
  */
 export function validateRequest(request: TTSRequest): void {
   if (!request.text || request.text.trim().length === 0) {

@@ -18,7 +18,7 @@ import { ErrorResponse, ErrorCode } from '@/types/audio';
 
 export default function HomePage() {
   const [text, setText] = useState('');
-  const [voice, setVoice] = useState('en-US-Journey-D');
+  const [voice, setVoice] = useState('en-US-AvaMultilingualNeural');
   const [filename, setFilename] = useState('');
   const [status, setStatus] = useState(ConversionStatus.IDLE);
   const [progress, setProgress] = useState(0);
