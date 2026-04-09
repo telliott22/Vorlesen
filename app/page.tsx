@@ -18,7 +18,7 @@ import { ErrorResponse, ErrorCode } from '@/types/audio';
 
 export default function HomePage() {
   const [text, setText] = useState('');
-  const [voice, setVoice] = useState('en-US-AvaMultilingualNeural');
+  const [voice, setVoice] = useState('en-US-Journey-D');
   const [filename, setFilename] = useState('');
   const [status, setStatus] = useState(ConversionStatus.IDLE);
   const [progress, setProgress] = useState(0);
@@ -50,16 +50,17 @@ export default function HomePage() {
 
       const audioChunks: AudioChunk[] = [];
       const failedChunks: number[] = [];
-      let completedCount = 0;
 
-      // Process a single chunk with retry
-      const processChunk = async (index: number): Promise<void> => {
+      // Process each chunk
+      for (let i = 0; i < chunks.length; i++) {
+        setCurrentChunk(i + 1);
+
         try {
           const response = await fetch('/api/tts-chunk', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              text: chunks[index].text,
+              text: chunks[i].text,
               voice,
               format: 'mp3',
             }),
@@ -68,41 +69,31 @@ export default function HomePage() {
           if (!response.ok) {
             const errorData = await response.json();
             if (response.status === 429) {
+              // Rate limited - wait and retry
               await new Promise((resolve) =>
                 setTimeout(resolve, (errorData.retryAfter || 5) * 1000)
               );
-              return processChunk(index); // Retry
+              i--; // Retry this chunk
+              continue;
             }
-            failedChunks.push(index);
-            return;
+            failedChunks.push(i);
+            continue;
           }
 
           const data = await response.json();
           audioChunks.push({
-            order: chunks[index].order,
-            textContent: chunks[index].text,
+            order: chunks[i].order,
+            textContent: chunks[i].text,
             audioData: data.audioData,
             durationSeconds: data.durationSeconds,
             generatedAt: Date.now(),
           });
-        } catch (err) {
-          console.error(`Failed to convert chunk ${index}:`, err);
-          failedChunks.push(index);
-        } finally {
-          completedCount++;
-          setCurrentChunk(completedCount);
-          setProgress(Math.round((completedCount / chunks.length) * 100));
-        }
-      };
 
-      // Process chunks in parallel batches of 2
-      const BATCH_SIZE = 2;
-      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-        const batch = chunks.slice(i, i + BATCH_SIZE);
-        await Promise.all(batch.map((_, j) => processChunk(i + j)));
-        // Small delay between batches to avoid overwhelming the service
-        if (i + BATCH_SIZE < chunks.length) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          // Update progress
+          setProgress(Math.round(((i + 1) / chunks.length) * 100));
+        } catch (err) {
+          console.error(`Failed to convert chunk ${i}:`, err);
+          failedChunks.push(i);
         }
       }
 

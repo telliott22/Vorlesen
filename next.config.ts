@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['edge-tts-universal'],
+  /* config options here */
 };
 
 export default nextConfig;
