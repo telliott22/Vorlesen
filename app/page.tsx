@@ -95,11 +95,15 @@ export default function HomePage() {
         }
       };
 
-      // Process chunks in parallel batches of 3
-      const BATCH_SIZE = 3;
+      // Process chunks in parallel batches of 2
+      const BATCH_SIZE = 2;
       for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
         const batch = chunks.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map((_, j) => processChunk(i + j)));
+        // Small delay between batches to avoid overwhelming the service
+        if (i + BATCH_SIZE < chunks.length) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
       }
 
       if (failedChunks.length > 0) {

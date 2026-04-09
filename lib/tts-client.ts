@@ -24,13 +24,26 @@ const VALID_VOICES = [
  */
 export async function convertToSpeech(
   request: TTSRequest,
-  retries: number = 3
+  retries: number = 4
 ): Promise<TTSResponse> {
   try {
     const tts = new EdgeTTS(request.text, request.voice);
-    const result = await tts.synthesize();
+
+    // Race the synthesis against a timeout
+    const timeoutMs = 30000;
+    const result = await Promise.race([
+      tts.synthesize(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TTS request timed out')), timeoutMs)
+      ),
+    ]);
 
     const arrayBuffer = await result.audio.arrayBuffer();
+
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('No audio data received');
+    }
+
     const audioData = Buffer.from(arrayBuffer).toString('base64');
 
     // Estimate duration (~150 words per minute, ~5 chars per word)
@@ -44,10 +57,11 @@ export async function convertToSpeech(
     };
   } catch (error) {
     const err = error as { message?: string };
+    console.error(`TTS attempt failed (${retries} retries left):`, err.message);
 
     // Retry on transient failures
     if (retries > 0) {
-      const backoffTime = Math.pow(2, 4 - retries) * 500; // 1s, 2s, 4s
+      const backoffTime = Math.pow(2, 4 - retries) * 500; // 0.5s, 1s, 2s, 4s
       await new Promise((resolve) => setTimeout(resolve, backoffTime));
       return convertToSpeech(request, retries - 1);
     }
