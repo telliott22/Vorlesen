@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(response, { status: 200 });
     } catch (apiError) {
+      console.error('TTS conversion error:', apiError);
       const err = apiError as ErrorResponse;
       // Handle rate limiting
       if (err.code === ErrorCode.RATE_LIMIT) {

@@ -42,6 +42,8 @@ const VALID_VOICES = [
   'en-US-Neural2-H',
   'en-US-Neural2-I',
   'en-US-Neural2-J',
+  'en-US-Wavenet-D',
+  'en-US-Wavenet-F',
 ];
 
 /**

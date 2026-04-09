@@ -65,6 +65,16 @@ const VOICE_OPTIONS = [
     label: 'Neural Male Narrator',
     description: 'Premium quality — polished narrator',
   },
+  {
+    value: 'en-US-Wavenet-D',
+    label: 'Wavenet Male (Original)',
+    description: 'The original voice — reliable & natural',
+  },
+  {
+    value: 'en-US-Wavenet-F',
+    label: 'Wavenet Female (Original)',
+    description: 'The original voice — reliable & natural',
+  },
 ];
 
 export function VoiceSelector({ value, onChange, disabled = false }: VoiceSelectorProps) {
