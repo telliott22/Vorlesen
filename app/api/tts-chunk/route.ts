@@ -75,13 +75,14 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Unexpected error in /api/tts-chunk:', error);
+    const err = error as { message?: string };
+    console.error('Unexpected error in /api/tts-chunk:', err.message || error);
 
     return NextResponse.json(
       {
-        error: 'Internal server error',
+        error: err.message || 'Internal server error',
         code: ErrorCode.API_ERROR,
-        retryable: false,
+        retryable: true,
       },
       { status: 500 }
     );

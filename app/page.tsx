@@ -67,7 +67,12 @@ export default function HomePage() {
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              errorData = { error: await response.text() };
+            }
             if (response.status === 429) {
               // Rate limited - wait and retry
               await new Promise((resolve) =>
@@ -76,11 +81,19 @@ export default function HomePage() {
               i--; // Retry this chunk
               continue;
             }
+            console.error(`Chunk ${i} error (${response.status}):`, errorData);
             failedChunks.push(i);
             continue;
           }
 
-          const data = await response.json();
+          let data;
+          try {
+            data = await response.json();
+          } catch {
+            console.error(`Chunk ${i}: invalid JSON response`);
+            failedChunks.push(i);
+            continue;
+          }
           audioChunks.push({
             order: chunks[i].order,
             textContent: chunks[i].text,
