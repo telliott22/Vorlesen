@@ -47,7 +47,7 @@ export async function convertToSpeech(
 
     // Retry on transient failures
     if (retries > 0) {
-      const backoffTime = Math.pow(2, 4 - retries) * 1000; // 2s, 4s, 8s
+      const backoffTime = Math.pow(2, 4 - retries) * 500; // 1s, 2s, 4s
       await new Promise((resolve) => setTimeout(resolve, backoffTime));
       return convertToSpeech(request, retries - 1);
     }

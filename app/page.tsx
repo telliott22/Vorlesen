@@ -50,17 +50,16 @@ export default function HomePage() {
 
       const audioChunks: AudioChunk[] = [];
       const failedChunks: number[] = [];
+      let completedCount = 0;
 
-      // Process each chunk
-      for (let i = 0; i < chunks.length; i++) {
-        setCurrentChunk(i + 1);
-
+      // Process a single chunk with retry
+      const processChunk = async (index: number): Promise<void> => {
         try {
           const response = await fetch('/api/tts-chunk', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              text: chunks[i].text,
+              text: chunks[index].text,
               voice,
               format: 'mp3',
             }),
@@ -69,32 +68,38 @@ export default function HomePage() {
           if (!response.ok) {
             const errorData = await response.json();
             if (response.status === 429) {
-              // Rate limited - wait and retry
               await new Promise((resolve) =>
                 setTimeout(resolve, (errorData.retryAfter || 5) * 1000)
               );
-              i--; // Retry this chunk
-              continue;
+              return processChunk(index); // Retry
             }
-            failedChunks.push(i);
-            continue;
+            failedChunks.push(index);
+            return;
           }
 
           const data = await response.json();
           audioChunks.push({
-            order: chunks[i].order,
-            textContent: chunks[i].text,
+            order: chunks[index].order,
+            textContent: chunks[index].text,
             audioData: data.audioData,
             durationSeconds: data.durationSeconds,
             generatedAt: Date.now(),
           });
-
-          // Update progress
-          setProgress(Math.round(((i + 1) / chunks.length) * 100));
         } catch (err) {
-          console.error(`Failed to convert chunk ${i}:`, err);
-          failedChunks.push(i);
+          console.error(`Failed to convert chunk ${index}:`, err);
+          failedChunks.push(index);
+        } finally {
+          completedCount++;
+          setCurrentChunk(completedCount);
+          setProgress(Math.round((completedCount / chunks.length) * 100));
         }
+      };
+
+      // Process chunks in parallel batches of 3
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+        const batch = chunks.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map((_, j) => processChunk(i + j)));
       }
 
       if (failedChunks.length > 0) {
