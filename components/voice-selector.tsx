@@ -16,44 +16,9 @@ interface VoiceSelectorProps {
 
 const VOICE_OPTIONS = [
   {
-    value: 'en-US-AvaMultilingualNeural',
-    label: 'Ava',
-    description: 'Warm female — natural & expressive (US)',
-  },
-  {
-    value: 'en-US-BrianMultilingualNeural',
-    label: 'Brian',
-    description: 'Confident male — clear & authoritative (US)',
-  },
-  {
-    value: 'en-GB-RyanNeural',
-    label: 'Ryan',
-    description: 'Engaging male — friendly & natural (British)',
-  },
-  {
-    value: 'en-US-AndrewMultilingualNeural',
-    label: 'Andrew',
-    description: 'Calm male — natural & human (US)',
-  },
-  {
-    value: 'en-US-EmmaMultilingualNeural',
-    label: 'Emma',
-    description: 'Soft female — natural & narrating (US)',
-  },
-  {
-    value: 'en-GB-SoniaNeural',
-    label: 'Sonia',
-    description: 'Polished female — elegant & clear (British)',
-  },
-  {
     value: 'en-US-AriaNeural',
     label: 'Aria',
     description: 'Expressive female — versatile & lively (US)',
-  },
-  {
-    value: 'en-US-GuyNeural',
-    label: 'Guy',
-    description: 'Relaxed male — easy-going & conversational (US)',
   },
   {
     value: 'en-US-JennyNeural',
@@ -61,9 +26,44 @@ const VOICE_OPTIONS = [
     description: 'Clear female — great for narration (US)',
   },
   {
+    value: 'en-GB-RyanNeural',
+    label: 'Ryan',
+    description: 'Engaging male — friendly & natural (British)',
+  },
+  {
     value: 'en-US-RogerNeural',
     label: 'Roger',
     description: 'Deep male — narrator style (US)',
+  },
+  {
+    value: 'en-US-GuyNeural',
+    label: 'Guy',
+    description: 'Relaxed male — easy-going & conversational (US)',
+  },
+  {
+    value: 'en-US-AvaNeural',
+    label: 'Ava',
+    description: 'Warm female — natural & expressive (US)',
+  },
+  {
+    value: 'en-GB-SoniaNeural',
+    label: 'Sonia',
+    description: 'Polished female — elegant & clear (British)',
+  },
+  {
+    value: 'en-US-AndrewNeural',
+    label: 'Andrew',
+    description: 'Calm male — natural & human (US)',
+  },
+  {
+    value: 'en-US-BrianNeural',
+    label: 'Brian',
+    description: 'Confident male — clear & authoritative (US)',
+  },
+  {
+    value: 'en-US-EmmaNeural',
+    label: 'Emma',
+    description: 'Soft female — natural & narrating (US)',
   },
 ];
 

@@ -2,16 +2,16 @@ import { EdgeTTS } from 'edge-tts-universal';
 import { TTSRequest, TTSResponse, ErrorCode, ErrorResponse } from '@/types/audio';
 
 const VALID_VOICES = [
-  'en-US-AvaMultilingualNeural',
-  'en-US-BrianMultilingualNeural',
-  'en-GB-RyanNeural',
-  'en-US-AndrewMultilingualNeural',
-  'en-US-EmmaMultilingualNeural',
-  'en-GB-SoniaNeural',
   'en-US-AriaNeural',
-  'en-US-GuyNeural',
   'en-US-JennyNeural',
+  'en-GB-RyanNeural',
   'en-US-RogerNeural',
+  'en-US-GuyNeural',
+  'en-US-AvaNeural',
+  'en-GB-SoniaNeural',
+  'en-US-AndrewNeural',
+  'en-US-BrianNeural',
+  'en-US-EmmaNeural',
 ];
 
 /**
