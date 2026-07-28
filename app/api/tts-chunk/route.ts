@@ -7,7 +7,7 @@ export const maxDuration = 60; // 60 seconds max for Vercel hobby plan
 
 /**
  * POST /api/tts-chunk
- * Convert a single text chunk to speech using Google Cloud TTS
+ * Convert a single text chunk to speech using Edge TTS
  */
 export async function POST(request: NextRequest) {
   try {

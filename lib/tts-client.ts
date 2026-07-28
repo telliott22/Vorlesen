@@ -22,7 +22,9 @@ export async function convertToSpeech(
   retries: number = 3
 ): Promise<TTSResponse> {
   try {
-    const tts = new EdgeTTS(request.text, request.voice);
+    // Pad with leading and trailing pauses so Edge TTS doesn't clip words
+    const paddedText = '... ' + request.text.trimEnd() + ' .';
+    const tts = new EdgeTTS(paddedText, request.voice);
     const result = await tts.synthesize();
 
     const arrayBuffer = await result.audio.arrayBuffer();

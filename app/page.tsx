@@ -27,6 +27,7 @@ export default function HomePage() {
   const [error, setError] = useState<ErrorResponse | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioId, setAudioId] = useState<string | null>(null);
+  const [audioExt, setAudioExt] = useState<string>('mp3');
 
   const handleConvert = async () => {
     if (!text.trim()) {
@@ -134,6 +135,7 @@ export default function HomePage() {
       setStatus(ConversionStatus.STITCHING);
       const url = await createAudioURL(audioChunks);
       setAudioUrl(url);
+      setAudioExt(audioChunks.length > 1 ? 'wav' : 'mp3');
 
       // Save to localStorage (optional - don't fail if storage is full)
       const id = generateUUID();
@@ -181,7 +183,7 @@ export default function HomePage() {
     const safeName = name.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim();
     const a = document.createElement('a');
     a.href = audioUrl;
-    a.download = `${safeName || 'vorlesen'}.mp3`;
+    a.download = `${safeName || 'vorlesen'}.${audioExt}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
