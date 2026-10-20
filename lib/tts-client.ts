@@ -1,4 +1,4 @@
-import { EdgeTTS } from 'edge-tts-universal';
+import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { TTSRequest, TTSResponse, ErrorCode, ErrorResponse } from '@/types/audio';
 
 const VALID_VOICES = [
@@ -15,6 +15,36 @@ const VALID_VOICES = [
 ];
 
 /**
+ * Escape text for embedding in the SSML that Edge TTS expects
+ */
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Synthesize text with Edge TTS and return the MP3 bytes
+ */
+async function synthesize(text: string, voice: string): Promise<Buffer> {
+  const tts = new MsEdgeTTS({ connectionTimeoutMs: 10000, synthesisTimeoutMs: 15000 });
+  try {
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    const { audioStream } = tts.toStream(escapeXml(text));
+    const chunks: Buffer[] = [];
+    for await (const chunk of audioStream) {
+      chunks.push(chunk as Buffer);
+    }
+    return Buffer.concat(chunks);
+  } finally {
+    tts.close();
+  }
+}
+
+/**
  * Convert text to speech using Edge TTS (free Microsoft neural voices)
  */
 export async function convertToSpeech(
@@ -24,16 +54,13 @@ export async function convertToSpeech(
   try {
     // Pad with leading and trailing pauses so Edge TTS doesn't clip words
     const paddedText = '... ' + request.text.trimEnd() + ' .';
-    const tts = new EdgeTTS(paddedText, request.voice);
-    const result = await tts.synthesize();
+    const audio = await synthesize(paddedText, request.voice);
 
-    const arrayBuffer = await result.audio.arrayBuffer();
-
-    if (arrayBuffer.byteLength === 0) {
+    if (audio.byteLength === 0) {
       throw new Error('No audio data received');
     }
 
-    const audioData = Buffer.from(arrayBuffer).toString('base64');
+    const audioData = audio.toString('base64');
 
     // Estimate duration (~150 words per minute, ~5 chars per word)
     const wordCount = request.text.split(/\s+/).length;
