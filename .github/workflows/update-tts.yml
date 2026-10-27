@@ -1,0 +1,59 @@
+# Microsoft keeps changing the free Edge TTS service, which breaks speech
+# conversion until msedge-tts ships a fix. This checks for a new msedge-tts
+# release every day, tests that it can still synthesize speech, and pushes
+# the update to main so Vercel redeploys the site.
+name: Update msedge-tts
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # every day at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Stays within the current major version (^2) so API changes can't break the site
+      - name: Update msedge-tts
+        run: npm update msedge-tts
+
+      - name: Check Edge TTS still produces audio
+        run: |
+          node -e "
+            const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
+            (async () => {
+              const tts = new MsEdgeTTS({ connectionTimeoutMs: 10000, synthesisTimeoutMs: 20000 });
+              await tts.setMetadata('en-US-AriaNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+              let bytes = 0;
+              for await (const chunk of tts.toStream('Hello, this is a test.').audioStream) bytes += chunk.length;
+              tts.close();
+              if (bytes === 0) throw new Error('No audio received');
+              console.log('msedge-tts', require('msedge-tts/package.json').version, 'OK:', bytes, 'bytes');
+            })().catch((e) => { console.error(e); process.exit(1); });
+          "
+
+      - name: Commit and push if updated
+        run: |
+          if git diff --quiet package.json package-lock.json; then
+            echo "msedge-tts is already up to date"
+            exit 0
+          fi
+          npm run build
+          VERSION=$(node -p "require('msedge-tts/package.json').version")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "fix: update msedge-tts to $VERSION"
+          git push
