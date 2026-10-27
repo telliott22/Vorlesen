@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAzureConfigured } from '@/lib/tts-client';
 
 export const runtime = 'nodejs';
 
@@ -7,15 +8,12 @@ export const runtime = 'nodejs';
  * Health check endpoint for monitoring
  */
 export async function GET() {
-  const isConfigured =
-    !!process.env.GOOGLE_CLOUD_TTS_API_KEY ||
-    !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
-
   return NextResponse.json(
     {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      ttsConfigured: isConfigured,
+      ttsConfigured: true, // Edge TTS needs no credentials
+      azureBackupConfigured: isAzureConfigured(),
     },
     { status: 200 }
   );

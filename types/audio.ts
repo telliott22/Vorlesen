@@ -2,6 +2,7 @@ export interface TTSRequest {
   text: string;
   voice: string;
   format: string;
+  provider?: 'azure'; // force the Azure backup, for testing it
 }
 
 export interface TTSResponse {

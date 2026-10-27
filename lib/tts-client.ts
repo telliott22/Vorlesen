@@ -27,10 +27,17 @@ function escapeXml(text: string): string {
 }
 
 /**
+ * Whether the paid Azure Speech backup is set up (see .env.example)
+ */
+export function isAzureConfigured(): boolean {
+  return !!process.env.AZURE_SPEECH_KEY && !!process.env.AZURE_SPEECH_REGION;
+}
+
+/**
  * Synthesize text with Edge TTS and return the MP3 bytes
  */
-async function synthesize(text: string, voice: string): Promise<Buffer> {
-  const tts = new MsEdgeTTS({ connectionTimeoutMs: 10000, synthesisTimeoutMs: 15000 });
+async function synthesizeWithEdge(text: string, voice: string): Promise<Buffer> {
+  const tts = new MsEdgeTTS({ connectionTimeoutMs: 8000, synthesisTimeoutMs: 15000 });
   try {
     await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
     const { audioStream } = tts.toStream(escapeXml(text));
@@ -45,16 +52,72 @@ async function synthesize(text: string, voice: string): Promise<Buffer> {
 }
 
 /**
- * Convert text to speech using Edge TTS (free Microsoft neural voices)
+ * Synthesize text with the official Azure Speech API (same voices as Edge TTS)
+ */
+async function synthesizeWithAzure(text: string, voice: string): Promise<Buffer> {
+  if (!isAzureConfigured()) {
+    throw new Error('Azure Speech backup is not configured');
+  }
+
+  const locale = voice.split('-').slice(0, 2).join('-');
+  const ssml =
+    `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${locale}">` +
+    `<voice name="${voice}">${escapeXml(text)}</voice></speak>`;
+
+  const response = await fetch(
+    `https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
+    {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY!,
+        'Content-Type': 'application/ssml+xml',
+        'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+        'User-Agent': 'vorlesen',
+      },
+      body: ssml,
+      signal: AbortSignal.timeout(30000),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Azure Speech error: HTTP ${response.status} ${await response.text()}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+/**
+ * Try free Edge TTS first; if it fails, fall back to Azure Speech when configured
+ */
+async function synthesize(text: string, voice: string, provider?: 'azure'): Promise<Buffer> {
+  if (provider === 'azure') {
+    return synthesizeWithAzure(text, voice);
+  }
+
+  try {
+    return await synthesizeWithEdge(text, voice);
+  } catch (edgeError) {
+    if (!isAzureConfigured()) {
+      throw edgeError;
+    }
+    console.warn('Edge TTS failed, using Azure Speech backup:', (edgeError as Error).message);
+    return synthesizeWithAzure(text, voice);
+  }
+}
+
+/**
+ * Convert text to speech using Edge TTS (free Microsoft neural voices),
+ * with Azure Speech as a backup
  */
 export async function convertToSpeech(
   request: TTSRequest,
-  retries: number = 3
+  // Each attempt can take ~25s when Edge TTS is down, so retry less when the backup runs too
+  retries: number = isAzureConfigured() ? 1 : 3
 ): Promise<TTSResponse> {
   try {
     // Pad with leading and trailing pauses so Edge TTS doesn't clip words
     const paddedText = '... ' + request.text.trimEnd() + ' .';
-    const audio = await synthesize(paddedText, request.voice);
+    const audio = await synthesize(paddedText, request.voice, request.provider);
 
     if (audio.byteLength === 0) {
       throw new Error('No audio data received');

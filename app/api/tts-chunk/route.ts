@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       text: body.text,
       voice: body.voice,
       format: body.format || 'mp3',
+      provider: body.provider === 'azure' ? 'azure' : undefined,
     };
 
     // Validate request parameters
